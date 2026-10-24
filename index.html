@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem e-Aduan Digital</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    animation: {
+                        'aurora': 'aurora 15s ease infinite alternate',
+                        'float': 'float 6s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        aurora: {
+                            '0%': { backgroundPosition: '0% 50%' },
+                            '50%': { backgroundPosition: '100% 50%' },
+                            '100%': { backgroundPosition: '0% 50%' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background: linear-gradient(-45deg, #0f172a, #1e1b4b, #311042, #022c22, #0f172a);
+            background-size: 400% 400%;
+            animation: aurora 18s ease infinite;
+            color: #f8fafc;
+            min-height: 100vh;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.07);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+        }
+
+        .glass-modal {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .input-aurora {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+            transition: all 0.3s ease;
+        }
+
+        .input-aurora:focus {
+            outline: none;
+            border-color: #818cf8;
+            box-shadow: 0 0 15px rgba(129, 140, 248, 0.4);
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(129, 140, 248, 0.3);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(129, 140, 248, 0.6);
+        }
+    </style>
+</head>
+<body class="font-sans antialiased flex flex-col min-h-screen justify-between p-4 sm:p-6 md:p-8">
+
+    <!-- Header Section -->
+    <header class="max-w-4xl mx-auto w-full mb-6 text-center">
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-card mb-3 text-xs sm:text-sm font-medium text-indigo-300 border border-indigo-500/30">
+            <span class="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            Sistem e-Aduan Digital V3.0 (Auto PDF Mail)
+        </div>
+        <h1 class="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-teal-200 via-indigo-200 to-pink-300">
+            Pusat Aduan & Maklum Balas
+        </h1>
+        <p class="text-slate-300 mt-2 text-sm sm:text-base max-w-xl mx-auto">
+            Sampaikan aduan anda secara telus. Salinan resit PDF akan dihantar secara automatik ke e-mel anda.
+        </p>
+
+        <!-- Admin Access Top Button -->
+        <div class="mt-4 flex justify-center items-center gap-2">
+            <button onclick="openAdminModal()" class="px-4 py-1.5 rounded-full text-xs font-semibold bg-indigo-900/60 hover:bg-indigo-800/80 text-indigo-200 border border-indigo-500/30 transition flex items-center gap-2 shadow-sm">
+                <i class="fa-solid fa-user-shield text-emerald-400"></i> Akses Admin
+            </button>
+            <span id="adminBadge" class="hidden text-xs bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-full border border-emerald-500/30 font-medium">
+                <i class="fa-solid fa-lock-open mr-1"></i> Admin Logged In
+            </span>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-4xl mx-auto w-full flex-grow">
+        
+        <!-- Tab Switcher (Form / Dashboard) -->
+        <div class="flex justify-center mb-6">
+            <div class="glass-card p-1.5 rounded-xl flex gap-2 flex-wrap justify-center">
+                <button id="tabFormBtn" onclick="switchTab('form')" class="px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-300 bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg">
+                    <i class="fa-solid fa-pen-to-square mr-2"></i>Borang Aduan
+                </button>
+                <button id="tabListBtn" onclick="switchTab('list')" class="px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-300 text-slate-300 hover:text-white hover:bg-white/5">
+                    <i class="fa-solid fa-list-check mr-2"></i>Semak Aduan (<span id="aduanCount">0</span>)
+                </button>
+                <button id="tabAdminBtn" onclick="checkAdminTabAccess()" class="px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-300 text-amber-300 hover:bg-white/5 flex items-center gap-1">
+                    <i class="fa-solid fa-chart-line mr-1"></i> Dashboard Admin
+                </button>
+            </div>
+        </div>
+
+        <!-- Section 1: Form e-Aduan -->
+        <section id="formSection" class="glass-card rounded-2xl p-6 sm:p-8 relative overflow-hidden transition-all duration-300">
+            <div class="absolute -top-24 -right-24 w-48 h-48 bg-purple-500/20 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-teal-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+            <!-- Google Apps Script URL Config Bar -->
+            <div class="mb-5 p-3 rounded-xl bg-slate-900/60 border border-slate-700/60 flex flex-col sm:flex-row items-center gap-2 text-xs">
+                <span class="text-indigo-300 font-medium shrink-0 flex items-center gap-1.5">
+                    <i class="fa-solid fa-link text-emerald-400"></i> Apps Script Web App URL:
+                </span>
+                <input type="text" id="appScriptUrlInput" 
+                    placeholder="https://script.google.com/macros/s/AKfycbx.../exec" 
+                    class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-slate-200 text-xs focus:outline-none focus:border-indigo-400 font-mono">
+                <button type="button" onclick="saveScriptUrl()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg transition shrink-0">
+                    Simpan URL
+                </button>
+            </div>
+
+            <form id="aduanForm" onsubmit="handleFormSubmit(event)" class="space-y-5 relative z-10">
+                <!-- Nama Penuh -->
+                <div>
+                    <label for="nama" class="block text-sm font-medium text-slate-200 mb-1.5">
+                        <i class="fa-regular fa-user text-indigo-400 mr-2"></i>Nama Penuh <span class="text-rose-400">*</span>
+                    </label>
+                    <input type="text" id="nama" required placeholder="Contoh: Ahmad Zaki bin Ismail"
+                        class="w-full px-4 py-3 rounded-xl input-aurora text-sm sm:text-base placeholder-slate-500">
+                </div>
+
+                <!-- No Telefon & Email -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label for="telefon" class="block text-sm font-medium text-slate-200 mb-1.5">
+                            <i class="fa-solid fa-phone text-indigo-400 mr-2"></i>Nombor Telefon <span class="text-rose-400">*</span>
+                        </label>
+                        <input type="tel" id="telefon" required placeholder="Contoh: 0123456789" pattern="^[0-9\-\+]{9,14}$"
+                            class="w-full px-4 py-3 rounded-xl input-aurora text-sm sm:text-base placeholder-slate-500">
+                    </div>
+
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-slate-200 mb-1.5">
+                            <i class="fa-regular fa-envelope text-indigo-400 mr-2"></i>Alamat E-mel (Untuk Terima PDF) <span class="text-rose-400">*</span>
+                        </label>
+                        <input type="email" id="email" required placeholder="nama@domain.com"
+                            class="w-full px-4 py-3 rounded-xl input-aurora text-sm sm:text-base placeholder-slate-500">
+                    </div>
+                </div>
+
+                <!-- Jenis Aduan -->
+                <div>
+                    <label for="jenisAduan" class="block text-sm font-medium text-slate-200 mb-1.5">
+                        <i class="fa-solid fa-list-ul text-indigo-400 mr-2"></i>Kategori / Jenis Aduan <span class="text-rose-400">*</span>
+                    </label>
+                    <div class="relative">
+                        <select id="jenisAduan" required
+                            class="w-full px-4 py-3 rounded-xl input-aurora text-sm sm:text-base appearance-none cursor-pointer">
+                            <option value="" disabled selected class="bg-slate-900 text-slate-400">-- Sila Pilih Jenis Aduan --</option>
+                            <option value="Infrastruktur & Kemudahan Awam" class="bg-slate-900 text-slate-100">Infrastruktur & Kemudahan Awam</option>
+                            <option value="Kebersihan & Persekitaran" class="bg-slate-900 text-slate-100">Kebersihan & Persekitaran</option>
+                            <option value="Perkhidmatan Pelanggan" class="bg-slate-900 text-slate-100">Perkhidmatan Pelanggan</option>
+                            <option value="Keselamatan & Ketenteraman" class="bg-slate-900 text-slate-100">Keselamatan & Ketenteraman</option>
+                            <option value="Isu Sistem / IT" class="bg-slate-900 text-slate-100">Isu Sistem / IT</option>
+                            <option value="Lain-lain" class="bg-slate-900 text-slate-100">Lain-lain Kategori</option>
+                        </select>
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-indigo-300">
+                            <i class="fa-solid fa-chevron-down text-xs"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Deskripsi Aduan -->
+                <div>
+                    <label for="deskripsi" class="block text-sm font-medium text-slate-200 mb-1.5">
+                        <i class="fa-regular fa-file-lines text-indigo-400 mr-2"></i>Deskripsi Aduan <span class="text-rose-400">*</span>
+                    </label>
+                    <textarea id="deskripsi" rows="4" required placeholder="Nyatakan maklumat terperinci seperti lokasi, tarikh, dan liputan masalah..."
+                        class="w-full px-4 py-3 rounded-xl input-aurora text-sm sm:text-base placeholder-slate-500 resize-none"></textarea>
+                    <div class="flex justify-between items-center mt-1 text-xs text-slate-400">
+                        <span>Sila berikan butiran secukupnya.</span>
+                        <span id="charCount">0/1000</span>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <div class="pt-3">
+                    <button type="submit" 
+                        class="w-full py-3.5 px-6 rounded-xl font-bold text-white bg-gradient-to-r from-teal-400 via-indigo-500 to-purple-600 hover:from-teal-500 hover:via-indigo-600 hover:to-purple-700 shadow-lg shadow-indigo-500/25 transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
+                        <i class="fa-regular fa-eye"></i> Semak & Preview Aduan
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Section 2: Senarai Aduan Dihantar -->
+        <section id="listSection" class="glass-card rounded-2xl p-6 hidden">
+            <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+                <h2 class="text-xl font-bold text-indigo-200 flex items-center gap-2">
+                    <i class="fa-solid fa-box-archive"></i> Aduan Yang Telah Dihantar
+                </h2>
+                <button onclick="fetchDataFromSheet()" class="text-xs px-3 py-1.5 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 rounded-lg transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-rotate-right"></i> Refresh Data
+                </button>
+            </div>
+            <div id="aduanListContainer" class="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+                <!-- Dynamic Content -->
+            </div>
+        </section>
+
+        <!-- Section 3: Dashboard Admin Panel -->
+        <section id="adminDashboardSection" class="glass-card rounded-2xl p-6 hidden">
+            <div class="flex justify-between items-center mb-6 pb-4 border-b border-white/10 flex-wrap gap-3">
+                <div>
+                    <h2 class="text-xl sm:text-2xl font-extrabold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-chart-pie text-emerald-400"></i> Dashboard Pentadbir e-Aduan
+                    </h2>
+                    <p class="text-xs text-slate-400">Disambungkan ke Google Sheet Live Integration</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="fetchDataFromSheet()" class="px-3 py-1.5 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/40 rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-arrows-rotate"></i> Sync Live Data
+                    </button>
+                    <button onclick="exportToCSV()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-file-csv text-emerald-400"></i> Export CSV
+                    </button>
+                    <button onclick="logoutAdmin()" class="px-3 py-1.5 bg-rose-600/30 hover:bg-rose-600/50 text-rose-300 border border-rose-500/40 rounded-lg text-xs font-semibold transition">
+                        <i class="fa-solid fa-right-from-bracket"></i> Log Keluar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-slate-900/60 p-4 rounded-xl border border-white/10">
+                    <span class="text-xs text-slate-400 font-medium block">Jumlah Aduan</span>
+                    <span id="statTotal" class="text-2xl sm:text-3xl font-extrabold text-white mt-1 block">0</span>
+                </div>
+                <div class="bg-amber-950/30 p-4 rounded-xl border border-amber-500/30">
+                    <span class="text-xs text-amber-300 font-medium block">Aduan Baru</span>
+                    <span id="statBaru" class="text-2xl sm:text-3xl font-extrabold text-amber-400 mt-1 block">0</span>
+                </div>
+                <div class="bg-sky-950/30 p-4 rounded-xl border border-sky-500/30">
+                    <span class="text-xs text-sky-300 font-medium block">Dalam Proses</span>
+                    <span id="statProses" class="text-2xl sm:text-3xl font-extrabold text-sky-400 mt-1 block">0</span>
+                </div>
+                <div class="bg-emerald-950/30 p-4 rounded-xl border border-emerald-500/30">
+                    <span class="text-xs text-emerald-300 font-medium block">Selesai</span>
+                    <span id="statSelesai" class="text-2xl sm:text-3xl font-extrabold text-emerald-400 mt-1 block">0</span>
+                </div>
+            </div>
+
+            <!-- Search and Filter Bar -->
+            <div class="flex flex-col sm:flex-row gap-3 mb-5">
+                <div class="relative flex-grow">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-sm"></i>
+                    <input type="text" id="adminSearchInput" oninput="filterAdminTable()" placeholder="Cari ID, Nama, E-mel atau Deskripsi..." 
+                        class="w-full pl-9 pr-4 py-2 bg-slate-900/80 border border-slate-700 rounded-xl text-xs sm:text-sm text-slate-200 focus:outline-none focus:border-indigo-400">
+                </div>
+                <select id="adminStatusFilter" onchange="filterAdminTable()" class="bg-slate-900/80 border border-slate-700 text-slate-200 text-xs sm:text-sm rounded-xl px-3 py-2 cursor-pointer focus:outline-none focus:border-indigo-400">
+                    <option value="ALL">Semua Status</option>
+                    <option value="Baru">Baru</option>
+                    <option value="Dalam Proses">Dalam Proses</option>
+                    <option value="Selesai">Selesai</option>
+                    <option value="Ditolak">Ditolak</option>
+                </select>
+            </div>
+
+            <!-- Admin Table -->
+            <div class="overflow-x-auto rounded-xl border border-white/10">
+                <table class="w-full text-left text-xs sm:text-sm text-slate-300">
+                    <thead class="bg-slate-900/90 text-indigo-300 uppercase font-semibold text-[11px] border-b border-white/10">
+                        <tr>
+                            <th class="p-3">ID Aduan</th>
+                            <th class="p-3">Tarikh</th>
+                            <th class="p-3">Pengadu</th>
+                            <th class="p-3">Kategori</th>
+                            <th class="p-3">Deskripsi</th>
+                            <th class="p-3">Status</th>
+                            <th class="p-3 text-center">Tindakan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminTableBody" class="divide-y divide-white/5 bg-slate-900/30">
+                        <!-- Dynamic Row Generation -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal Admin Security Login -->
+    <div id="adminAuthModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="glass-modal rounded-2xl p-6 max-w-sm w-full border border-indigo-500/40 shadow-2xl transform scale-95 transition-transform duration-300" id="adminAuthCard">
+            <div class="text-center mb-4">
+                <div class="w-12 h-12 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center mx-auto mb-2 text-xl border border-indigo-500/30">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white">Log Masuk Pentadbir</h3>
+                <p class="text-xs text-slate-400 mt-1">Masukkan kata laluan keselamatan admin.</p>
+            </div>
+
+            <form onsubmit="handleAdminLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Kata Laluan Admin</label>
+                    <input type="password" id="adminPasswordInput" required placeholder="••••••••" 
+                        class="w-full px-4 py-2.5 rounded-xl input-aurora text-sm">
+                </div>
+                <div id="loginErrorMsg" class="text-rose-400 text-xs hidden text-center font-medium">
+                    <i class="fa-solid fa-triangle-exclamation mr-1"></i> Kata laluan salah!
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="closeAdminModal()" class="w-1/2 py-2.5 rounded-xl text-xs font-semibold text-slate-300 bg-slate-800 hover:bg-slate-700 transition">
+                        Batal
+                    </button>
+                    <button type="submit" class="w-1/2 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 transition">
+                        Sahkan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Preview Aduan -->
+    <div id="previewModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="glass-modal rounded-2xl p-6 sm:p-8 max-w-xl w-full border border-indigo-500/30 shadow-2xl transform scale-95 transition-transform duration-300" id="modalCard">
+            
+            <div class="flex justify-between items-center border-b border-slate-700/60 pb-4 mb-4">
+                <div class="flex items-center gap-2">
+                    <div class="p-2 bg-indigo-500/20 rounded-lg text-indigo-300">
+                        <i class="fa-solid fa-file-pdf text-xl text-rose-400"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-white">Pra-tonton & Pengesahan Aduan</h3>
+                        <p class="text-xs text-indigo-300">Salinan PDF akan dihantar terus ke e-mel anda.</p>
+                    </div>
+                </div>
+                <button onclick="closePreviewModal()" class="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-white/5 transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Preview Data List -->
+            <div class="space-y-3.5 text-sm">
+                <div class="bg-slate-900/50 p-3 rounded-lg border border-white/5">
+                    <span class="text-xs text-indigo-300 uppercase font-semibold tracking-wider block mb-0.5">Nama Penuh</span>
+                    <span id="prevNama" class="text-white font-medium text-base"></span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="bg-slate-900/50 p-3 rounded-lg border border-white/5">
+                        <span class="text-xs text-indigo-300 uppercase font-semibold tracking-wider block mb-0.5">No. Telefon</span>
+                        <span id="prevTelefon" class="text-slate-200"></span>
+                    </div>
+                    <div class="bg-slate-900/50 p-3 rounded-lg border border-white/5">
+                        <span class="text-xs text-indigo-300 uppercase font-semibold tracking-wider block mb-0.5">E-mel Penerima PDF</span>
+                        <span id="prevEmail" class="text-teal-300 font-semibold break-all"></span>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900/50 p-3 rounded-lg border border-white/5">
+                    <span class="text-xs text-indigo-300 uppercase font-semibold tracking-wider block mb-0.5">Jenis Aduan</span>
+                    <span id="prevJenis" class="inline-block mt-1 px-2.5 py-1 bg-indigo-500/20 text-indigo-300 rounded-md text-xs font-semibold border border-indigo-500/30"></span>
+                </div>
+
+                <div class="bg-slate-900/50 p-3 rounded-lg border border-white/5">
+                    <span class="text-xs text-indigo-300 uppercase font-semibold tracking-wider block mb-0.5">Deskripsi Aduan</span>
+                    <p id="prevDeskripsi" class="text-slate-300 text-sm whitespace-pre-line leading-relaxed max-h-36 overflow-y-auto mt-1 pr-1"></p>
+                </div>
+
+                <div class="p-3 bg-indigo-950/50 rounded-xl border border-indigo-500/30 flex items-center gap-3 text-xs text-indigo-200">
+                    <i class="fa-solid fa-envelope-circle-check text-2xl text-emerald-400 shrink-0"></i>
+                    <span>Setelah anda menekan <b>Sahkan & Hantar</b>, sistem akan menyimpan aduan dan menghantar fail PDF rasmi ke e-mel anda.</span>
+                </div>
+            </div>
+
+            <!-- Modal Action Buttons -->
+            <div class="mt-6 flex flex-col sm:flex-row gap-3">
+                <button onclick="closePreviewModal()" 
+                    class="w-full sm:w-1/2 py-3 px-4 rounded-xl text-slate-300 bg-slate-800/80 hover:bg-slate-700 border border-slate-600 font-semibold text-sm transition">
+                    <i class="fa-solid fa-pen mr-2"></i> Edit Semula
+                </button>
+                <button id="btnSubmitAduan" onclick="confirmSubmitAduan()" 
+                    class="w-full sm:w-1/2 py-3 px-4 rounded-xl font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 shadow-lg shadow-emerald-500/20 text-sm transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-paper-plane"></i> Sahkan & Hantar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <div class="glass-card bg-emerald-950/90 border-emerald-500/40 p-4 rounded-xl shadow-2xl flex items-center gap-3 text-white max-w-md">
+            <div class="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0 text-xl">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <div>
+                <h4 class="font-bold text-sm text-emerald-200">Aduan Berjaya Dihantar!</h4>
+                <p id="toastMessage" class="text-xs text-slate-300 mt-0.5"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-12 text-center text-xs text-slate-400 py-4 border-t border-slate-800">
+        <p>© 2026 e-Aduan Digital System. Hak Cipta Terpelihara.</p>
+        <p class="mt-1 text-slate-500">Direka khas dengan Preview Mode & Automatic PDF Email Dispatcher.</p>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        let GOOGLE_APPS_SCRIPT_URL = localStorage.getItem('eAduan_AppScript_URL') || 'https://script.google.com/macros/s/AKfycbyJw_ex389oZvyeXXyTIATsXdBSZclMngcxz7AZ5nl-bDDK0mcXXOsbrpTpDOjF1uY/exec';
+        
+        const ADMIN_PASSWORD = '@dmin123';
+        let isAdminLoggedIn = localStorage.getItem('eAduan_isAdmin') === 'true';
+
+        let globalAduanList = [];
+        let pendingAduanData = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlInput = document.getElementById('appScriptUrlInput');
+            if (urlInput) urlInput.value = GOOGLE_APPS_SCRIPT_URL;
+
+            updateAdminUI();
+            fetchDataFromSheet();
+        });
+
+        function saveScriptUrl() {
+            const urlInput = document.getElementById('appScriptUrlInput');
+            const val = urlInput.value.trim();
+            if (val) {
+                GOOGLE_APPS_SCRIPT_URL = val;
+                localStorage.setItem('eAduan_AppScript_URL', val);
+                showToast('URL Apps Script berjaya disimpan!');
+                fetchDataFromSheet();
+            } else {
+                showToast('Sila masukkan URL Apps Script yang sah.');
+            }
+        }
+
+        async function fetchDataFromSheet() {
+            if (!GOOGLE_APPS_SCRIPT_URL) return;
+
+            try {
+                const res = await fetch(GOOGLE_APPS_SCRIPT_URL);
+                const json = await res.json();
+                if (json.result === 'success' && Array.isArray(json.data)) {
+                    globalAduanList = json.data.reverse();
+                    localStorage.setItem('eAduanList', JSON.stringify(globalAduanList));
+                    renderAduanList();
+                    renderAdminDashboard();
+                }
+            } catch (err) {
+                console.warn('Gagal memuat turun data dari Google Sheet.', err);
+                globalAduanList = getStoredAduan();
+                renderAduanList();
+                renderAdminDashboard();
+            }
+        }
+
+        const deskripsiInput = document.getElementById('deskripsi');
+        const charCount = document.getElementById('charCount');
+
+        deskripsiInput.addEventListener('input', () => {
+            const currentLen = deskripsiInput.value.length;
+            charCount.textContent = `${currentLen}/1000`;
+            if (currentLen > 1000) {
+                charCount.classList.add('text-rose-400');
+            } else {
+                charCount.classList.remove('text-rose-400');
+            }
+        });
+
+        // Step 1: User click preview/submit form -> Show Preview Modal
+        function handleFormSubmit(e) {
+            e.preventDefault();
+
+            pendingAduanData = {
+                nama: document.getElementById('nama').value.trim(),
+                telefon: document.getElementById('telefon').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                jenisAduan: document.getElementById('jenisAduan').value,
+                deskripsi: document.getElementById('deskripsi').value.trim(),
+                tarikh: new Date().toLocaleString('ms-MY', { dateStyle: 'medium', timeStyle: 'short' })
+            };
+
+            document.getElementById('prevNama').textContent = pendingAduanData.nama;
+            document.getElementById('prevTelefon').textContent = pendingAduanData.telefon;
+            document.getElementById('prevEmail').textContent = pendingAduanData.email;
+            document.getElementById('prevJenis').textContent = pendingAduanData.jenisAduan;
+            document.getElementById('prevDeskripsi').textContent = pendingAduanData.deskripsi;
+
+            const modal = document.getElementById('previewModal');
+            const modalCard = document.getElementById('modalCard');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modalCard.classList.remove('scale-95');
+            modalCard.classList.add('scale-100');
+        }
+
+        function closePreviewModal() {
+            const modal = document.getElementById('previewModal');
+            const modalCard = document.getElementById('modalCard');
+            modalCard.classList.remove('scale-100');
+            modalCard.classList.add('scale-95');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        // Step 2: User confirm submit -> Send to Backend (Apps Script generates & emails PDF)
+        async function confirmSubmitAduan() {
+            if (!pendingAduanData) return;
+
+            const submitBtn = document.getElementById('btnSubmitAduan');
+            const originalBtnHtml = submitBtn.innerHTML;
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Menjana & Menghantar PDF...`;
+
+            const ticketId = 'ADU-' + Math.floor(100000 + Math.random() * 900000);
+            pendingAduanData.id = ticketId;
+            pendingAduanData.status = 'Baru';
+
+            if (GOOGLE_APPS_SCRIPT_URL) {
+                try {
+                    await fetch(GOOGLE_APPS_SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(pendingAduanData)
+                    });
+                } catch (error) {
+                    console.error('Ralat penghantaran ke Google Sheets:', error);
+                }
+            }
+
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnHtml;
+
+            saveAduanToStorage(pendingAduanData);
+
+            document.getElementById('aduanForm').reset();
+            charCount.textContent = '0/1000';
+            closePreviewModal();
+
+            showToast(`Aduan #${ticketId} dihantar! Salinan PDF telah dihantar ke ${pendingAduanData.email}`);
+
+            setTimeout(() => {
+                fetchDataFromSheet();
+                switchTab('list');
+            }, 800);
+        }
+
+        function getStoredAduan() {
+            const data = localStorage.getItem('eAduanList');
+            return data ? JSON.parse(data) : [];
+        }
+
+        function saveAduanToStorage(item) {
+            globalAduanList.unshift(item);
+            localStorage.setItem('eAduanList', JSON.stringify(globalAduanList));
+        }
+
+        function switchTab(tab) {
+            const formSection = document.getElementById('formSection');
+            const listSection = document.getElementById('listSection');
+            const adminSection = document.getElementById('adminDashboardSection');
+            
+            const tabFormBtn = document.getElementById('tabFormBtn');
+            const tabListBtn = document.getElementById('tabListBtn');
+            const tabAdminBtn = document.getElementById('tabAdminBtn');
+
+            formSection.classList.add('hidden');
+            listSection.classList.add('hidden');
+            adminSection.classList.add('hidden');
+
+            tabFormBtn.className = "px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-300 text-slate-300 hover:text-white hover:bg-white/5";
+            tabListBtn.className = "px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-300 text-slate-300 hover:text-white hover:bg-white/5";
+            tabAdminBtn.className = "px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-300 text-amber-300 hover:bg-white/5 flex items-center gap-1";
+
+            if (tab === 'form') {
+                formSection.classList.remove('hidden');
+                tabFormBtn.className = "px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-300 bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg";
+            } else if (tab === 'list') {
+                listSection.classList.remove('hidden');
+                tabListBtn.className = "px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-300 bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg";
+            } else if (tab === 'admin') {
+                adminSection.classList.remove('hidden');
+                tabAdminBtn.className = "px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-300 bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg flex items-center gap-1";
+                renderAdminDashboard();
+            }
+        }
+
+        function renderAduanList() {
+            const container = document.getElementById('aduanListContainer');
+            const countBadge = document.getElementById('aduanCount');
+
+            countBadge.textContent = globalAduanList.length;
+
+            if (globalAduanList.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-slate-400">
+                        <i class="fa-regular fa-folder-open text-4xl mb-3 text-slate-500"></i>
+                        <p class="text-sm">Tiada rekod aduan buat masa ini.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = globalAduanList.map(item => `
+                <div class="bg-slate-900/50 rounded-xl p-4 border border-white/10 hover:border-indigo-500/40 transition">
+                    <div class="flex justify-between items-start mb-2 gap-2">
+                        <div>
+                            <span class="text-xs font-mono font-bold text-teal-300 bg-teal-500/10 px-2 py-0.5 rounded border border-teal-500/20">${item.id}</span>
+                            <h4 class="font-semibold text-white mt-1 text-sm sm:text-base">${escapeHtml(item.jenisAduan)}</h4>
+                        </div>
+                        <span class="text-xs text-slate-400 flex items-center gap-1 shrink-0">
+                            <i class="fa-regular fa-clock"></i> ${item.tarikh}
+                        </span>
+                    </div>
+                    <p class="text-slate-300 text-xs sm:text-sm mb-3 line-clamp-2">${escapeHtml(item.deskripsi)}</p>
+                    <div class="flex justify-between items-center text-xs text-slate-400 pt-2 border-t border-white/5">
+                        <span class="flex items-center gap-1.5">
+                            <i class="fa-regular fa-user text-indigo-400"></i> ${escapeHtml(item.nama)}
+                        </span>
+                        ${getStatusBadge(item.status)}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openAdminModal() {
+            if (isAdminLoggedIn) {
+                switchTab('admin');
+                return;
+            }
+            const modal = document.getElementById('adminAuthModal');
+            const card = document.getElementById('adminAuthCard');
+            document.getElementById('adminPasswordInput').value = '';
+            document.getElementById('loginErrorMsg').classList.add('hidden');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            card.classList.remove('scale-95');
+            card.classList.add('scale-100');
+        }
+
+        function closeAdminModal() {
+            const modal = document.getElementById('adminAuthModal');
+            const card = document.getElementById('adminAuthCard');
+            card.classList.remove('scale-100');
+            card.classList.add('scale-95');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function handleAdminLogin(e) {
+            e.preventDefault();
+            const pass = document.getElementById('adminPasswordInput').value;
+            if (pass === ADMIN_PASSWORD) {
+                isAdminLoggedIn = true;
+                localStorage.setItem('eAduan_isAdmin', 'true');
+                updateAdminUI();
+                closeAdminModal();
+                showToast('Akses Admin Berjaya!');
+                switchTab('admin');
+            } else {
+                document.getElementById('loginErrorMsg').classList.remove('hidden');
+            }
+        }
+
+        function logoutAdmin() {
+            isAdminLoggedIn = false;
+            localStorage.setItem('eAduan_isAdmin', 'false');
+            updateAdminUI();
+            switchTab('form');
+            showToast('Log keluar admin berjaya.');
+        }
+
+        function checkAdminTabAccess() {
+            if (isAdminLoggedIn) {
+                switchTab('admin');
+            } else {
+                openAdminModal();
+            }
+        }
+
+        function updateAdminUI() {
+            const badge = document.getElementById('adminBadge');
+            if (isAdminLoggedIn) {
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function renderAdminDashboard() {
+            let total = globalAduanList.length;
+            let baru = globalAduanList.filter(a => a.status === 'Baru').length;
+            let proses = globalAduanList.filter(a => a.status === 'Dalam Proses').length;
+            let selesai = globalAduanList.filter(a => a.status === 'Selesai').length;
+
+            document.getElementById('statTotal').textContent = total;
+            document.getElementById('statBaru').textContent = baru;
+            document.getElementById('statProses').textContent = proses;
+            document.getElementById('statSelesai').textContent = selesai;
+
+            filterAdminTable();
+        }
+
+        function filterAdminTable() {
+            const query = document.getElementById('adminSearchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('adminStatusFilter').value;
+            const tbody = document.getElementById('adminTableBody');
+
+            let filtered = globalAduanList.filter(item => {
+                let matchQuery = (item.id && item.id.toLowerCase().includes(query)) ||
+                                 (item.nama && item.nama.toLowerCase().includes(query)) ||
+                                 (item.email && item.email.toLowerCase().includes(query)) ||
+                                 (item.deskripsi && item.deskripsi.toLowerCase().includes(query));
+                
+                let matchStatus = statusFilter === 'ALL' || item.status === statusFilter;
+
+                return matchQuery && matchStatus;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="p-6 text-center text-slate-500">Tiada rekod aduan dijumpai.</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(item => `
+                <tr class="hover:bg-white/5 transition">
+                    <td class="p-3 font-mono font-bold text-teal-300 text-xs">${escapeHtml(item.id)}</td>
+                    <td class="p-3 text-slate-400 text-xs">${escapeHtml(item.tarikh)}</td>
+                    <td class="p-3">
+                        <div class="font-medium text-white text-xs">${escapeHtml(item.nama)}</div>
+                        <div class="text-[11px] text-slate-400">${escapeHtml(item.telefon)} • ${escapeHtml(item.email)}</div>
+                    </td>
+                    <td class="p-3 text-xs text-indigo-200">${escapeHtml(item.jenisAduan)}</td>
+                    <td class="p-3 text-xs text-slate-300 max-w-xs truncate" title="${escapeHtml(item.deskripsi)}">${escapeHtml(item.deskripsi)}</td>
+                    <td class="p-3">
+                        <select onchange="updateAduanStatus('${item.id}', this.value)" class="bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-2 py-1 cursor-pointer focus:border-indigo-400">
+                            <option value="Baru" ${item.status === 'Baru' ? 'selected' : ''}>Baru</option>
+                            <option value="Dalam Proses" ${item.status === 'Dalam Proses' ? 'selected' : ''}>Dalam Proses</option>
+                            <option value="Selesai" ${item.status === 'Selesai' ? 'selected' : ''}>Selesai</option>
+                            <option value="Ditolak" ${item.status === 'Ditolak' ? 'selected' : ''}>Ditolak</option>
+                        </select>
+                    </td>
+                    <td class="p-3 text-center">
+                        <button onclick="deleteAduan('${item.id}')" class="p-1.5 bg-rose-500/20 hover:bg-rose-500/40 text-rose-300 rounded-lg transition" title="Padam Aduan">
+                            <i class="fa-regular fa-trash-can text-xs"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function updateAduanStatus(id, newStatus) {
+            const target = globalAduanList.find(a => a.id === id);
+            if (target) {
+                target.status = newStatus;
+                localStorage.setItem('eAduanList', JSON.stringify(globalAduanList));
+                renderAdminDashboard();
+                renderAduanList();
+
+                if (GOOGLE_APPS_SCRIPT_URL) {
+                    try {
+                        await fetch(GOOGLE_APPS_SCRIPT_URL, {
+                            method: 'POST',
+                            mode: 'no-cors',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ action: 'updateStatus', id: id, newStatus: newStatus })
+                        });
+                        showToast(`Status #${id} dikemaskini ke: ${newStatus}`);
+                    } catch (e) {
+                        console.error('Ralat kemaskini Google Sheet:', e);
+                    }
+                }
+            }
+        }
+
+        async function deleteAduan(id) {
+            if (!confirm(`Adakah anda pasti ingin memadam aduan #${id}?`)) return;
+
+            globalAduanList = globalAduanList.filter(a => a.id !== id);
+            localStorage.setItem('eAduanList', JSON.stringify(globalAduanList));
+            renderAdminDashboard();
+            renderAduanList();
+
+            if (GOOGLE_APPS_SCRIPT_URL) {
+                try {
+                    await fetch(GOOGLE_APPS_SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'deleteAduan', id: id })
+                    });
+                    showToast(`Aduan #${id} berjaya dipadam!`);
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+        }
+
+        function exportToCSV() {
+            if (globalAduanList.length === 0) {
+                showToast('Tiada data aduan untuk dieksport.');
+                return;
+            }
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "ID Aduan,Tarikh,Nama Penuh,No Telefon,E-mel,Jenis Aduan,Deskripsi,Status\n";
+
+            globalAduanList.forEach(row => {
+                let r = [
+                    `"${row.id}"`,
+                    `"${row.tarikh}"`,
+                    `"${row.nama}"`,
+                    `"${row.telefon}"`,
+                    `"${row.email}"`,
+                    `"${row.jenisAduan}"`,
+                    `"${(row.deskripsi || '').replace(/"/g, '""')}"`,
+                    `"${row.status}"`
+                ];
+                csvContent += r.join(",") + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Rekod_eAduan_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function getStatusBadge(status) {
+            switch(status) {
+                case 'Selesai':
+                    return `<span class="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-300 rounded text-[11px] font-medium border border-emerald-500/30">Selesai</span>`;
+                case 'Dalam Proses':
+                    return `<span class="px-2.5 py-0.5 bg-sky-500/20 text-sky-300 rounded text-[11px] font-medium border border-sky-500/30">Dalam Proses</span>`;
+                case 'Ditolak':
+                    return `<span class="px-2.5 py-0.5 bg-rose-500/20 text-rose-300 rounded text-[11px] font-medium border border-rose-500/30">Ditolak</span>`;
+                default:
+                    return `<span class="px-2.5 py-0.5 bg-amber-500/20 text-amber-300 rounded text-[11px] font-medium border border-amber-500/30">Baru</span>`;
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            toastMessage.textContent = msg;
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 4500);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/[&<>"']/g, function(m) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                }[m];
+            });
+        }
+
+        window.onload = function() {
+            renderAduanList();
+        }
+    </script>
+</body>
+</html>
